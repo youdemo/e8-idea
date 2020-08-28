@@ -87,7 +87,7 @@ public class UpdateLcZxBsAction implements Action {
 
 
         count = 0;
-        sql = "select count(1) as count from "+tableName+"_dt1 where expensess="+zdfbs+" and (((TO_DATE(EndDate, 'YYYY-MM-DD') - TO_DATE(StartDate, 'YYYY-MM-DD')+1)*150*(nvl(wsrs,0)))<CostRMB or (nvl(wsrs,0)/nvl(khrs,0.1)>2)) and mainid="+mainID;
+        sql = "select count(1) as count from "+tableName+"_dt1 where bxxmnew="+zdfbs+" and (((TO_DATE(EndDate, 'YYYY-MM-DD') - TO_DATE(StartDate, 'YYYY-MM-DD')+1)*150*(nvl(wsrs,0)+nvl(khrs,0)))<CostRMB or (nvl(wsrs,0)/nvl(khrs,0.1)>2)) and mainid="+mainID;
         rs.execute(sql);
         if(rs.next()){
             count = rs.getInt("count");
@@ -100,7 +100,7 @@ public class UpdateLcZxBsAction implements Action {
         //
         if(bmid.equals(dept)){//PM-JADE Account
             double amount = 0;
-            sql = "select nvl(sum(nvl(CostRMB,0)),0) as amount from "+tableName+"_dt1 where expensess<>'"+zdfbs+"' and mainid="+mainID;
+            sql = "select nvl(sum(nvl(CostRMB,0)),0) as amount from "+tableName+"_dt1 where bxxmnew<>'"+zdfbs+"' and mainid="+mainID;
             rs.execute(sql);
             if(rs.next()){
                 amount = rs.getDouble("amount");
@@ -111,7 +111,7 @@ public class UpdateLcZxBsAction implements Action {
         }
         if("".equals(bxlx)){
             count = 0;
-            sql = "select count(1) as count from "+tableName+"_dt1 where expensess='"+zdfbs+"' and mainid="+mainID;
+            sql = "select count(1) as count from "+tableName+"_dt1 where bxxmnew='"+zdfbs+"' and mainid="+mainID;
             rs.execute(sql);
             if(rs.next()){
                 count = rs.getInt("count");

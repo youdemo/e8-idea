@@ -11,6 +11,7 @@ public class TestAction implements Action{
 
 	@Override
 	public String execute(RequestInfo info) {
+
 		BaseBean log = new BaseBean();
 		String workflowID = info.getWorkflowid();
 		String requestid = info.getRequestid();

@@ -1,0 +1,333 @@
+USE [ecology]
+GO
+
+/****** Object:  UserDefinedFunction [dbo].[getBudgetTravelnew]    Script Date: 2020/7/13 21:50:33 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+
+
+ALTER function [dbo].[getBudgetTravelnew](
+	@sqrq varchar(100), --申请日期
+	@xm varchar(100), --表单建模项目数据   项目
+	@gsbm varchar(100),--公司/部门
+	@cdbm varchar(100), --费用承担部门	
+	@kmbm  varchar(100), --科目编码
+	@jmkm  varchar(100), --建模科目id 
+	@sxkz  varchar(100), --事项ID
+	@types varchar(100) -- 执行的业务类型   0 部门总预算   1  部门总已扣减用预算  2  部门冻结预算 3 部门 可用  4 公司级 总预算  5 公司级总已扣减用预算 6 公司级冻结预算 7 公司可用   
+	)
+returns varchar(100)
+begin
+	
+	declare @returnvalue decimal(18,2),
+	@temp1 decimal(18,2),
+	@temp2 decimal(18,2), 
+	@fsnf decimal(18),  
+	@ndqj decimal(18), --年度期间id
+	@temp3 decimal(18), --系统科目id
+	@temp4 decimal(18), --系统统一预算 科目id
+	@temp5 decimal(18,2), --未使用额度
+	@temp6 decimal(18,2), --已使用额度
+	@temp7 varchar(200), --事项内部订单
+	@temp8 varchar(200), --事项二级部门
+	@temp9 varchar(200), --事项科目编号
+	@temp10 varchar(200) --事项的具体说明
+	
+	if isnull(@sqrq,'') = '' or isnull(@xm,'') = '' or isnull(@gsbm,'') = '' or isnull(@cdbm,'') = ''or isnull(@kmbm,'') = '' or isnull(@jmkm,'') = '' or isnull(@types,'') = '' 
+	    begin
+			set @returnvalue = 0
+			return @returnvalue;
+        end
+	
+	select @temp3=id from  fnabudgetfeetype where codeName = @kmbm
+	select @temp4=groupCtrlId from  fnabudgetfeetype where id = @temp3
+	select @fsnf=CONVERT(varchar(4),GETDATE(),120) 
+	select @ndqj=id from  fnayearsperiods where fnayear = @fsnf and status ='1'
+	if  isnull(@sxkz,'') =''
+		begin
+			if @types = '0'
+				begin
+					if @temp3 = @temp4
+						begin
+							-- select @returnvalue = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where fykmbh=@kmbm  and  fykm = @jmkm    and xm = @xm   and rjbm = @cdbm and zt=0 and nf=@fsnf
+							select @temp5=isnull(sum(isnull(u.ss,0.00)),0.00) from (
+							select isnull(sum(isnull(hjje,0.00)),0.00) as ss from uf_yssjdr uyd where fykmbh=@kmbm and fykm = @jmkm and rjbm = @cdbm and zt=0 and nf=@fsnf and sfyfsys = 0 and xm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司') union all
+							select isnull(sum(isnull(hjje,0.00)),0.00) as ss from uf_yssjdr uyd where fykmbh=@kmbm and fykm = @jmkm and rjbm = @cdbm and zt=0 and nf=@fsnf and sfyfsys = 0 and xm =215 ) u
+						
+							select @temp6 = isnull(sum(isnull(u.ss,0.00)),0.00) from (
+							
+							select  isnull(sum(isnull(hjje,0.00)),0.00) as ss from uf_yssjdr uyd where fykmbh=@kmbm and fykm = @jmkm and rjbm = @cdbm and zt=0 and nf=@fsnf and sfyfsys = 1 and xm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司')  union all
+							
+							select isnull(sum(isnull(hjje,0.00)),0.00) as ss from uf_yssjdr uyd where fykmbh=@kmbm and fykm = @jmkm and rjbm = @cdbm and zt=0 and nf=@fsnf and sfyfsys = 1 and  xm = 215 ) u
+
+							--sfyfsys 0 否  1 是
+							
+							set @returnvalue = @temp5 + @temp6
+							
+						end
+					else 
+						begin
+							-- select @returnvalue = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where   xm = @xm   and rjbm = @cdbm and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1')
+							
+							select @temp5 = isnull(sum(isnull(u.ss,0.00)),0.00)  from (
+							select isnull(sum(isnull(hjje,0.00)),0.00) as ss  from  uf_yssjdr uyd  where sfyfsys = 0 and rjbm = @cdbm and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and xm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司') union all
+							
+							select  isnull(sum(isnull(hjje,0.00)),0.00) as ss  from  uf_yssjdr uyd  where sfyfsys = 0 and rjbm = @cdbm and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and xm =215) u
+							
+							select @temp6 = isnull(sum(isnull(u.ss,0.00)),0.00)  from (
+							select isnull(sum(isnull(hjje,0.00)),0.00) as ss  from  uf_yssjdr uyd  where sfyfsys = 1 and rjbm = @cdbm and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and xm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司') union all
+							
+							select  isnull(sum(isnull(hjje,0.00)),0.00) as ss  from  uf_yssjdr uyd  where sfyfsys = 1 and rjbm = @cdbm and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and xm =215) u
+							
+							
+							
+							
+							
+							-- select @temp6 = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where sfyfsys = 1  and rjbm = @cdbm and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and xm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司')
+							
+							set @returnvalue = @temp5 + @temp6
+							
+						end
+				end
+			else if @types = '1'
+				begin 
+					select @returnvalue=isnull(sum(isnull(amount,0)),0) from FnaExpenseInfo a join FnaYearsPeriodsList b on b.startdate <= a.occurdate and b.enddate >= a.occurdate join FnaBudgetfeeType c on a.subject = c.id where c.groupCtrlId in  (select c1.groupCtrlId from FnaBudgetfeeType c1 where c1.id = @temp3) --and a.status = 0 --状态：生效1，审批中0 
+				 and a.organizationid = @cdbm --要查询的总部、分部、部门或人力资源的id 
+				 and requestid in (select isnull(dqrid,0) from  uf_xmyszjb where xmmc not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司') and bm = @cdbm and xtkm in ( select d.id from FnaBudgetfeeType d where  d.groupCtrlId = @temp4 and d.Archive <> '1') and nf = @fsnf
+				 union all
+				 select isnull(dqrid,0) from  uf_xmyszjb where xmmc =215 and bm = @cdbm and xtkm in ( select d.id from FnaBudgetfeeType d where  d.groupCtrlId = @temp4 and d.Archive <> '1') and nf = @fsnf
+				 
+				 ) and a.organizationtype = 2 --组织ID类型(0：总部;1：分部ID;2：部门ID; 3：人力资源； 18004：成本中心；)
+				  and a.status = 1 --只查询出生效的预算版本的数据 
+				 and b.fnayear = @fsnf --查询的预算年度  20.9 
+				 
+				end
+			else if @types = '2'
+				begin 
+					select @returnvalue=isnull(sum(isnull(amount,0)),0) from FnaExpenseInfo a join FnaYearsPeriodsList b on b.startdate <= a.occurdate and b.enddate >= a.occurdate join FnaBudgetfeeType c on a.subject = c.id where c.groupCtrlId in  (select c1.groupCtrlId from FnaBudgetfeeType c1 where c1.id = @temp3) --and a.status = 0 --状态：生效1，审批中0 
+				 and a.organizationid = @cdbm --要查询的总部、分部、部门或人力资源的id 
+				 and requestid in (select isnull(dqrid,0) from  uf_xmyszjb where xmmc not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司') and bm = @cdbm and xtkm in ( select d.id from FnaBudgetfeeType d where  d.groupCtrlId = @temp4 and d.Archive <> '1') and nf = @fsnf union all
+				 
+				 select isnull(dqrid,0) from  uf_xmyszjb where xmmc =215 and bm = @cdbm and xtkm in ( select d.id from FnaBudgetfeeType d where  d.groupCtrlId = @temp4 and d.Archive <> '1') and nf = @fsnf
+				 
+				 
+				 ) and a.organizationtype = 2 --组织ID类型(0：总部;1：分部ID;2：部门ID; 3：人力资源； 18004：成本中心；)
+				 and a.status = 0 --只查询出生效的预算版本的数据 
+				 and b.fnayear = @fsnf --查询的预算年度  20.9 
+					
+				end
+			else if @types = '3'
+				begin 
+					
+					if @temp3 = @temp4
+						begin
+							-- select @temp1 = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where fykmbh=@kmbm  and  fykm = @jmkm    and xm = @xm   and rjbm = @cdbm and zt=0 and nf=@fsnf
+							-- select @temp5 = isnull(sum(isnull(hjje,0.00)),0.00) from uf_yssjdr uyd where fykmbh=@kmbm and fykm = @jmkm and rjbm = @cdbm and zt=0 and nf=@fsnf and sfyfsys = 0 and xm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司')
+							
+							-- select @temp6 = isnull(sum(isnull(hjje,0.00)),0.00) from uf_yssjdr uyd where fykmbh=@kmbm and fykm = @jmkm and rjbm = @cdbm and zt=0 and nf=@fsnf and sfyfsys = 1 and xm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司')  --sfyfsys 0 否  1 是
+							
+							
+							
+							select @temp5=isnull(sum(isnull(u.ss,0.00)),0.00) from (
+							select isnull(sum(isnull(hjje,0.00)),0.00) as ss from uf_yssjdr uyd where fykmbh=@kmbm and fykm = @jmkm and rjbm = @cdbm and zt=0 and nf=@fsnf and sfyfsys = 0 and xm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司') union all
+							select isnull(sum(isnull(hjje,0.00)),0.00) as ss from uf_yssjdr uyd where fykmbh=@kmbm and fykm = @jmkm and rjbm = @cdbm and zt=0 and nf=@fsnf and sfyfsys = 0 and xm =215 
+							union all
+							select isnull(sum(isnull(tzje,0.00)),0.00) as ss from uf_ystzsj where  kmbm=@kmbm and kmmc = @jmkm and fybm = @cdbm and SUBSTRING(tzrq,0,5)=@fsnf and (zcxm =215 or zcxm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司'))) u
+						
+							select @temp6 = isnull(sum(isnull(u.ss,0.00)),0.00) from (
+							
+							select  isnull(sum(isnull(hjje,0.00)),0.00) as ss from uf_yssjdr uyd where fykmbh=@kmbm and fykm = @jmkm and rjbm = @cdbm and zt=0 and nf=@fsnf and sfyfsys = 1 and xm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司')  union all
+							
+							select isnull(sum(isnull(hjje,0.00)),0.00) as ss from uf_yssjdr uyd where fykmbh=@kmbm and fykm = @jmkm and rjbm = @cdbm and zt=0 and nf=@fsnf and sfyfsys = 1 and  xm = 215 ) u
+
+							--sfyfsys 0 否  1 是
+							
+							set @temp1 = @temp5 + @temp6
+							
+							
+							
+							
+						end
+					else 
+						begin
+							-- select @temp1 = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where   xm = @xm   and rjbm = @cdbm and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1')
+							
+							-- select @temp5 = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where sfyfsys = 0 and rjbm = @cdbm and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and xm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司')
+							
+							-- select @temp6 = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where sfyfsys = 1  and rjbm = @cdbm and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and xm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司')
+							
+							
+							select @temp5 = isnull(sum(isnull(u.ss,0.00)),0.00)  from (
+							select isnull(sum(isnull(hjje,0.00)),0.00) as ss  from  uf_yssjdr uyd  where sfyfsys = 0 and rjbm = @cdbm and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and xm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司') union all
+							
+							select  isnull(sum(isnull(hjje,0.00)),0.00) as ss  from  uf_yssjdr uyd  where sfyfsys = 0 and rjbm = @cdbm and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and xm =215
+							union all
+							select  isnull(sum(isnull(tzje,0.00)),0.00) as ss  from  uf_ystzsj uyd  where fybm = @cdbm  and SUBSTRING(tzrq,0,5)=@fsnf and kmbm in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and (zcxm =215 or zcxm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司'))) u
+							
+							select @temp6 = isnull(sum(isnull(u.ss,0.00)),0.00)  from (
+							select isnull(sum(isnull(hjje,0.00)),0.00) as ss  from  uf_yssjdr uyd  where sfyfsys = 1 and rjbm = @cdbm and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and xm not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司') union all
+							
+							select  isnull(sum(isnull(hjje,0.00)),0.00) as ss  from  uf_yssjdr uyd  where sfyfsys = 1 and rjbm = @cdbm and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and xm =215) u
+							
+							
+							
+							
+							set @temp1 = @temp5 + @temp6
+						end
+					
+					select @temp2=isnull(sum(isnull(amount,0)),0) from FnaExpenseInfo a join FnaYearsPeriodsList b on b.startdate <= a.occurdate and b.enddate >= a.occurdate join FnaBudgetfeeType c on a.subject = c.id where c.groupCtrlId in  (select c1.groupCtrlId from FnaBudgetfeeType c1 where c1.id = @temp3) --and a.status = 0 --状态：生效1，审批中0 
+					 and a.organizationid = @cdbm --要查询的总部、分部、部门或人力资源的id 
+					 and requestid in (select isnull(dqrid,0) from  uf_xmyszjb where xmmc not in (select un.id from uf_nbdd un where un.ORDER_TYPE = '公司') and bm = @cdbm and xtkm in ( select d.id from FnaBudgetfeeType d where  d.groupCtrlId = @temp4 and d.Archive <> '1') and nf = @fsnf
+					   union all
+				 select isnull(dqrid,0) from  uf_xmyszjb where xmmc =215 and bm = @cdbm and xtkm in ( select d.id from FnaBudgetfeeType d where  d.groupCtrlId = @temp4 and d.Archive <> '1') and nf = @fsnf
+					 ) and a.organizationtype = 2 --组织ID类型(0：总部;1：分部ID;2：部门ID; 3：人力资源； 18004：成本中心；)
+					 --and a.status = 0 --只查询出生效的预算版本的数据 
+					 and b.fnayear = @fsnf --查询的预算年度  20.9 
+					set @returnvalue = @temp1 - @temp2 
+				end
+			else if @types = '4'
+				begin 
+					if @temp3 = @temp4
+						begin
+							-- select @returnvalue = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where fykmbh=@kmbm  and  fykm = @jmkm    and xm = @xm  and zt=0 and nf=@fsnf
+							select @temp5 = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where fykmbh=@kmbm  and  fykm = @jmkm    and xm = @xm  and zt=0 and nf=@fsnf and rjbm = @cdbm and sfyfsys = 0
+							select @temp6 = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where fykmbh=@kmbm  and  fykm = @jmkm    and xm = @xm  and zt=0 and nf=@fsnf and rjbm = @cdbm and sfyfsys = 1
+							set @returnvalue = @temp5 + @temp6
+							
+						end
+					else 
+						begin
+							-- select @returnvalue = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where   xm = @xm  and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1')
+							
+							select @temp5 = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where   xm = @xm  and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and sfyfsys = 0 and rjbm = @cdbm
+							
+							select @temp6 = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where   xm = @xm  and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and sfyfsys = 1 and rjbm = @cdbm
+							set @returnvalue = @temp5 + @temp6
+							
+						end
+				end
+			else if @types = '5'
+				begin 
+					select @returnvalue=isnull(sum(isnull(amount,0)),0) from FnaExpenseInfo a join FnaYearsPeriodsList b on b.startdate <= a.occurdate and b.enddate >= a.occurdate join FnaBudgetfeeType c on a.subject = c.id where c.groupCtrlId in  (select c1.groupCtrlId from FnaBudgetfeeType c1 where c1.id = @temp3) --and a.status = 0 --状态：生效1，审批中0 
+				 and a.organizationid = @cdbm --要查询的总部、分部、部门或人力资源的id 
+				 and requestid in (select isnull(dqrid,0) from  uf_xmyszjb where xmmc = @xm and bm = @cdbm and xtkm in ( select d.id from FnaBudgetfeeType d where  d.groupCtrlId = @temp4 and d.Archive <> '1') and nf = @fsnf) and a.organizationtype = 2 --组织ID类型(0：总部;1：分部ID;2：部门ID; 3：人力资源； 18004：成本中心；)
+				  and a.status = 1 --只查询出生效的预算版本的数据 
+				 and b.fnayear = @fsnf --查询的预算年度  20.9 
+											 
+				end
+			else if @types = '6'
+				begin 
+					select @returnvalue=isnull(sum(isnull(amount,0)),0) from FnaExpenseInfo a join FnaYearsPeriodsList b on b.startdate <= a.occurdate and b.enddate >= a.occurdate join FnaBudgetfeeType c on a.subject = c.id where c.groupCtrlId in  (select c1.groupCtrlId from FnaBudgetfeeType c1 where c1.id = @temp3) --and a.status = 0 --状态：生效1，审批中0 
+				  and a.organizationid = @cdbm --要查询的总部、分部、部门或人力资源的id 
+				 and requestid in (select isnull(dqrid,0) from  uf_xmyszjb where xmmc = @xm and bm = @cdbm and xtkm in ( select d.id from FnaBudgetfeeType d where  d.groupCtrlId = @temp4 and d.Archive <> '1') and nf = @fsnf) and a.organizationtype = 2 --组织ID类型(0：总部;1：分部ID;2：部门ID; 3：人力资源； 18004：成本中心；)
+				 and a.status = 0 --只查询出生效的预算版本的数据 
+				 and b.fnayear = @fsnf --查询的预算年度  20.9 
+					
+			   end
+			else if @types = '7'
+				begin 
+					
+					if @temp3 = @temp4
+						begin
+							-- select @temp1 = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where fykmbh=@kmbm  and  fykm = @jmkm    and xm = @xm  and zt=0 and nf=@fsnf
+							select @temp5 = isnull(sum(isnull(hjje,0.00)),0.00) from(
+								select  isnull(sum(isnull(hjje,0.00)),0.00) as hjje  from  uf_yssjdr uyd  where fykmbh=@kmbm  and  fykm = @jmkm    and xm = @xm  and zt=0 and nf=@fsnf and rjbm = @cdbm and sfyfsys = 0
+								union all
+								select isnull(sum(isnull(tzje,0.00)),0.00) as hjje from uf_ystzsj where  kmbm=@kmbm and kmmc = @jmkm and zcxm=@xm and fybm = @cdbm and SUBSTRING(tzrq,0,5)=@fsnf 
+								) u
+							select @temp6 = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where fykmbh=@kmbm  and  fykm = @jmkm    and xm = @xm  and zt=0 and nf=@fsnf and rjbm = @cdbm and sfyfsys = 1
+							set @temp1 = @temp5 + @temp6
+							
+							
+						end
+					else 
+						begin
+							-- select @temp1 = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where   xm = @xm  and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1')
+							
+							select @temp5 = isnull(sum(isnull(hjje,0.00)),0.00) from(
+								select  isnull(sum(isnull(hjje,0.00)),0.00) as hjje  from  uf_yssjdr uyd  where  xm = @xm  and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and rjbm = @cdbm and sfyfsys = 0
+								union all
+								select isnull(sum(isnull(tzje,0.00)),0.00) as hjje from uf_ystzsj where  zcxm=@xm and fybm = @cdbm and SUBSTRING(tzrq,0,5)=@fsnf and kmbm in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1')
+								) u							
+							select @temp6 = isnull(sum(isnull(hjje,0.00)),0.00)  from  uf_yssjdr uyd  where   xm = @xm  and zt=0 and nf=@fsnf and fykmbh in ( select c.codeName from FnaBudgetfeeType c where  c.groupCtrlId = @temp4 and Archive <> '1') and sfyfsys = 1 and rjbm = @cdbm
+							set @temp1 = @temp5 + @temp6
+						end
+
+					select @temp2=isnull(sum(isnull(amount,0)),0) from FnaExpenseInfo a join FnaYearsPeriodsList b on b.startdate <= a.occurdate and b.enddate >= a.occurdate join FnaBudgetfeeType c on a.subject = c.id where c.groupCtrlId in  (select c1.groupCtrlId from FnaBudgetfeeType c1 where c1.id = @temp3) --and a.status = 0 --状态：生效1，审批中0 
+				   and a.organizationid = @cdbm ---要查询的总部、分部、部门或人力资源的id 
+				 and requestid in (select isnull(dqrid,0) from  uf_xmyszjb where xmmc = @xm  and xtkm in ( select d.id from FnaBudgetfeeType d where  d.groupCtrlId = @temp4 and d.Archive <> '1') and nf = @fsnf) and a.organizationtype = 2 --组织ID类型(0：总部;1：分部ID;2：部门ID; 3：人力资源； 18004：成本中心；)
+				 -- and a.status = 0 --只查询出生效的预算版本的数据 
+				 and b.fnayear = @fsnf --查询的预算年度  20.9 
+					set @returnvalue = @temp1 - @temp2
+				end
+			end
+		else
+			begin
+				if @types = '0' or @types = '4'
+					begin
+						select @temp7 =nbdd ,@temp8 =rjbm ,@temp9 =fykmbh ,@temp10 =jtsm   from uf_yssjdr where id = @sxkz
+						select @returnvalue = isnull(sum(isnull(hjje,0)),0)  from uf_yssjdr where  nbdd =@temp7  and  rjbm = @temp8 and  fykmbh = @temp9 and jtsm = @temp10	and zt=0
+							
+							
+					end
+				else if @types = '1' or @types = '5'
+					begin
+						-- 系统视图
+						select @returnvalue = isnull(sum(isnull(v.jkje,0)),0) from uf_xmyszjb j
+							join all_sxkz_view v on (j.dqrid = v.requestid and j.dqmxid=v.id)
+							 where j.sxkz in(select id  from uf_yssjdr where id = @sxkz )  and j.nf = @fsnf  
+							 and v.requestid in(select requestId from workflow_requestbase where currentnodetype = 3)
+					end
+				else if @types = '2' or @types = '6'
+					begin
+						-- 系统视图
+						select @returnvalue = isnull(sum(isnull(v.jkje,0)),0) from uf_xmyszjb j
+							join all_sxkz_view v on (j.dqrid = v.requestid and j.dqmxid=v.id)
+							 where j.sxkz in(select id  from uf_yssjdr where id = @sxkz ) and j.nf = @fsnf  
+							 and v.requestid in(select requestId from workflow_requestbase where currentnodetype in(1,2))
+							 and j.dqrid not in (select distinct glrid from uf_xmyszjb where glrid <> '' and glrid is not null )
+					end 
+				else if @types = '3' or @types = '7'
+					begin
+						declare @valx1 decimal(18,2)
+						declare @valx2 decimal(18,2)
+
+
+						select @temp7 =nbdd ,@temp8 =rjbm ,@temp9 =fykmbh ,@temp10 =jtsm   from uf_yssjdr where id = @sxkz
+						select @valx1 = isnull(sum(isnull(hjje,0)),0)  from uf_yssjdr where  nbdd =@temp7  and  rjbm = @temp8 and  fykmbh = @temp9 and jtsm = @temp10 and zt=0 
+
+						if @valx1 >= 0
+							begin
+								select @valx2 = isnull(sum(isnull(v.jkje,0)),0) from uf_xmyszjb j
+									join all_sxkz_view v on (j.dqrid = v.requestid and j.dqmxid=v.id)
+									 where j.sxkz in(select id  from uf_yssjdr where id = @sxkz ) 
+									 and v.requestid in(select requestId from workflow_requestbase where currentnodetype > 0)
+									 and j.dqrid not in (select distinct glrid from uf_xmyszjb where glrid <> '' and glrid is not null )
+								set @returnvalue = @valx1 - @valx2
+								--if @returnvalue < 0
+									--begin
+										--set @returnvalue = 0
+									--end
+							end
+						else
+							begin
+								set @returnvalue = -2
+							end
+					end
+			end
+	
+	return 	Convert(decimal(18,2),@returnvalue)
+
+
+
+end
+
+GO
+
+

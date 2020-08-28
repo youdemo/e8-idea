@@ -61,6 +61,7 @@ public class WorkflowToPdf {
 			workflowid = Util.null2String(rs.getString("workflowid"));
 			requestname = Util.null2String(rs.getString("requestname"));
 			userid = "1";
+			//\\userid = Util.null2String(rs.getString("lastoperator"));
 		}
 
 		String exepathString = "/usr/wkhtmltopdf/bin/wkhtmltopdf";
@@ -189,7 +190,7 @@ public class WorkflowToPdf {
 			}
 		}
 		if ((!loginid.equals("") && !password.equals("")) || ((!(loginid.equals(""))) && (isadaccount.equals("1")))) {
-			para = "/workflow/request/ViewRequest.jsp?haveVerifyForward=true&requestid=" + requestid + "&para2=" + loginid + "&para3="
+			para = "/workflow/request/ViewRequest.jsp?haveVerifyForward=true&ismonitor=1&requestid=" + requestid + "&para2=" + loginid + "&para3="
 					+ password;
 		} else {
 			return params;
@@ -197,7 +198,7 @@ public class WorkflowToPdf {
 		//new BaseBean().writeLog("pageurl:"+oaaddress + "/login/VerifyRtxLogin.jsp");
 		params[0] = oaaddress + "/login/VerifyRtxLogin.jsp";
 		params[1] = "workflowtodoc";
-		String pageurl = "/workflow/request/ViewRequest.jsp?haveVerifyForward=true&isworkflowhtmldoc=1&requestid=" + requestid;
+		String pageurl = "/workflow/request/ViewRequest.jsp?haveVerifyForward=true&ismonitor=1&isworkflowhtmldoc=1&requestid=" + requestid;
 		if (accounttype > 0 && belongto > 0) {
 			pageurl += "&f_weaver_belongto_userid=" + f_weaver_belongto_userid + "&f_weaver_belongto_usertype="
 					+ f_weaver_belongto_usertype;

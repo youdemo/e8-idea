@@ -17,8 +17,10 @@ import org.xml.sax.InputSource;
 
 public class Test {
 	public static void main(String[] args) {
+		SimpleDateFormat sf = new SimpleDateFormat("yyyy");
 		String aaa = "<div><a </><img src=\"/weaver/weaver.file.FileDownload?fileid=117806\" title=\"\" alt=\"\"/>申请060-0007-090数量变更，数量增加1150PCS</div>";
 		System.out.println(removeHtmlTag(aaa).replaceAll("<[^<>]*/>",""));
+		System.out.println(sf.format(new Date()));
 
 	}
 	private static String removeHtmlTag(String content) {

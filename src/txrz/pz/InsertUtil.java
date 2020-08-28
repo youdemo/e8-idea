@@ -396,4 +396,53 @@ public class InsertUtil {
 
 		return rsx.executeSql(sql);
 	}
+	public boolean updatePZ(Map<String, String> mapStr, String table,
+			String uqField, String uqVal) {
+		if (mapStr == null || mapStr.isEmpty())
+			return false;
+		if (uqField == null || "".equals(uqField))
+			return false;
+		if (uqVal == null || "".equals(uqVal))
+			return false;
+
+		RecordSet rs = new RecordSet();
+
+		StringBuffer buff = new StringBuffer();
+		buff.append("update ");
+		buff.append(table);
+		buff.append(" set ");
+
+		Iterator<String> it = mapStr.keySet().iterator();
+		String flag = "";
+		while (it.hasNext()) {
+			String tmp_1 = it.next();
+			String tmp_1_str = mapStr.get(tmp_1);
+			if (tmp_1_str == null)
+				tmp_1_str = "";
+
+			if (tmp_1_str.length() > 0) {
+				buff.append(flag);
+				buff.append(tmp_1);
+				buff.append("=");
+
+				if (tmp_1_str.contains("##")) {
+					buff.append(tmp_1_str.replace("##", ""));
+				} else {
+					buff.append("'");
+					buff.append(tmp_1_str);
+					buff.append("'");
+				}
+				flag = ",";
+			}
+
+		}
+		buff.append(" where ");
+		buff.append(uqField);
+		buff.append("='");
+		buff.append(uqVal);
+		buff.append("' ");
+		String sql = buff.toString();
+		// log.writeLog("## sql = " + sql);
+		return rs.executeSql(sql);
+	}
 }

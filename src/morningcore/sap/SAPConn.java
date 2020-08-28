@@ -26,11 +26,11 @@ public class SAPConn{
 	private void init(){
 		try{			
 			System.out.println("-------------SAP Client Connects Start ----------------"); 
-			sapclient = "640";//SAP 客户端
+			sapclient = "750";//SAP 客户端
 			userid = "OAFW";//用户名
-			password = "123456";//密码
-			hostname = "172.21.2.5";//服务器
-			systemnumber = "00";//编号
+			password = "oa.1234";//密码
+			hostname = "172.21.2.10";//服务器
+			systemnumber = "01";//编号
 			Language = "ZH";//语言
 			JCO.Pool pool = JCO.getClientPoolManager().getPool(POOL_NAME);
 			if (pool == null) {

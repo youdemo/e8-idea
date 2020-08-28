@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import txrz.util.GetUtil;
 import weaver.conn.RecordSet;
 import weaver.formmode.setup.ModeRightInfo;
 import weaver.general.Util;
@@ -24,6 +25,7 @@ public class CreateBYJPZAction implements Action{
 		RecordSet rs = new RecordSet();
 		PzUtil pu = new PzUtil();
 		InsertUtil iu = new InsertUtil();
+		GetUtil gu = new GetUtil();
 		String modeid = pu.getModeId("uf_zjb");
 		SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd HH:MM:ss");
 		SimpleDateFormat dateFormate = new SimpleDateFormat("yyyy-MM-dd");
@@ -39,7 +41,10 @@ public class CreateBYJPZAction implements Action{
 		String pzzy = ""; //凭证摘要
 		String gsdm = "";//公司代码
 		String jfkm = "1221.05";
-		String dfkm = "1002.01.16";
+//		String dfkm = "1002.01.16";
+		String fkyh = "";//付款银行
+		String fkyhname = "";
+		String jdkmdm = "";//金蝶科目代码
 		String requestnamenew = "";
 		String account_name = "";
 		String sql = " Select tablename From Workflow_bill Where id in ("
@@ -54,7 +59,7 @@ public class CreateBYJPZAction implements Action{
 		if(rs.next()) {
 			requestnamenew = Util.null2String(rs.getString("requestnamenew"));
 		}
-		sql = "select djbh,xj,qkr,gh,(select lastname from hrmresource where id=a.qkr) as name,sybm,(select account_name from uf_gsb where id=a.gsb)  as account_name,gsdm from "+tableName+" a where requestid="+requestid;
+		sql = "select fkyh,jdkmdm,djbh,xj,bgr1,gh,(select lastname from hrmresource where id=a.bgr1) as name,sybm,(select account_name from uf_gsb where id=a.gsb)  as account_name,gsdm from "+tableName+" a where requestid="+requestid;
 		rs.executeSql(sql);
 		if(rs.next()){
 			djbh = Util.null2String(rs.getString("djbh"));
@@ -64,7 +69,10 @@ public class CreateBYJPZAction implements Action{
 			sybm = Util.null2String(rs.getString("sybm"));
 			account_name = Util.null2String(rs.getString("account_name"));
 			gsdm = Util.null2String(rs.getString("gsdm"));
+			fkyh = Util.null2String(rs.getString("fkyh"));
+			jdkmdm = Util.null2String(rs.getString("jdkmdm"));
 		}
+		fkyhname = gu.getFieldVal("uf_fkyhxx", "khyh", "id", fkyh);
 		pzzy = "付"+sybm+"零用金";
 		//借方
 		String hsxmjf = pu.getFZHS(jfkm);
@@ -81,7 +89,7 @@ public class CreateBYJPZAction implements Action{
 		mapStr.put("modedatacreater", "1");
 		mapStr.put("modedatacreatertype", "0");
 		mapStr.put("formmodeid", modeid);
-		//mapStr.put("PZRQ", bs);//凭证日期
+		mapStr.put("PZRQ", nowDate);//凭证日期
 		//mapStr.put("ZXSJ", bs);//执行时间
 		//mapStr.put("FHPZH", bs);//金蝶系统返回凭证号
 		//mapStr.put("PZZT", bs);//凭证状态
@@ -109,16 +117,17 @@ public class CreateBYJPZAction implements Action{
 		String pzid = "";
 		sql = "select id from uf_zjb where xglcid='"+requestid+"' and lx='0'";
 		rs.executeSql(sql);
-		if(rs.next()){
+		while(rs.next()){
 			pzid = Util.null2String(rs.getString("id"));
+			if(!"".equals(pzid)){
+				ModeRightInfo ModeRightInfo = new ModeRightInfo();
+				ModeRightInfo.editModeDataShare(Integer.valueOf("1"), Integer.valueOf(modeid),
+					Integer.valueOf(pzid));
+			}
 		}
-		if(!"".equals(pzid)){
-			ModeRightInfo ModeRightInfo = new ModeRightInfo();
-			ModeRightInfo.editModeDataShare(Integer.valueOf("1"), Integer.valueOf(modeid),
-				Integer.valueOf(pzid));
-		}
+		
 		//贷方
-		String hsxmdf = pu.getFZHS(dfkm);
+		String hsxmdf = pu.getFZHS(jdkmdm);
 		mapStr = new HashMap<String, String>();
 		mapStr.put("xglcid", requestid);//相关流程id
 		mapStr.put("PZZ", "AP");//凭证字
@@ -132,7 +141,7 @@ public class CreateBYJPZAction implements Action{
 		mapStr.put("modedatacreater", "1");
 		mapStr.put("modedatacreatertype", "0");
 		mapStr.put("formmodeid", modeid);
-		//mapStr.put("PZRQ", bs);//凭证日期
+		mapStr.put("PZRQ", nowDate);//凭证日期
 		//mapStr.put("ZXSJ", bs);//执行时间
 		//mapStr.put("FHPZH", bs);//金蝶系统返回凭证号
 		//mapStr.put("PZZT", bs);//凭证状态
@@ -152,9 +161,10 @@ public class CreateBYJPZAction implements Action{
 		mapStr.put("bmmc", "");//部门名称
 		mapStr.put("gysbm", "");//供应商编码
 		mapStr.put("gysmc", "");//供应商名称
-		
-		mapStr.put("KMBM", dfkm);//科目编码
-		mapStr.put("KMMC", "银行存款-人民币-中国银行新城科技园分行");//科目名称
+//		mapStr.put("KMBM", dfkm);//科目编码
+//		mapStr.put("KMMC", "银行存款-人民币-中国银行新城科技园分行");//科目名称
+		mapStr.put("KMBM", jdkmdm);//科目编码
+		mapStr.put("KMMC", fkyhname);//科目名称
 		//mapStr.put("JFJE", "");//借方金额
 		mapStr.put("DFJE", xj);//贷方金额
 		mapStr.put("ZY", pzzy);//摘要		
@@ -163,14 +173,15 @@ public class CreateBYJPZAction implements Action{
 		pzid = "";
 		sql = "select id from uf_zjb where xglcid='"+requestid+"' and lx='1'";
 		rs.executeSql(sql);
-		if(rs.next()){
+		while(rs.next()){
 			pzid = Util.null2String(rs.getString("id"));
+			if(!"".equals(pzid)){
+				ModeRightInfo ModeRightInfo = new ModeRightInfo();
+				ModeRightInfo.editModeDataShare(Integer.valueOf("1"), Integer.valueOf(modeid),
+					Integer.valueOf(pzid));
+			}
 		}
-		if(!"".equals(pzid)){
-			ModeRightInfo ModeRightInfo = new ModeRightInfo();
-			ModeRightInfo.editModeDataShare(Integer.valueOf("1"), Integer.valueOf(modeid),
-				Integer.valueOf(pzid));
-		}
+		
 		return SUCCESS;
 	}
 

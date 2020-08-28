@@ -7,7 +7,9 @@ package jsd.financialcontrol.util;
 public class FinalUtil {
 	public final static String username = "jstepm";
 	public final static String password = "jstepm";
-	public final static String appcode = "OLAP_1";
+	public final static String xmdxm = "JST007007000000000";//项目地项目
+	public final static String xmdzz = "售服中心";//项目地组织
+	public final static String appcode = "OLAP_1";//扣减冻结释放
 	public final static String secret = "B104-F037092FE0DB";
 	public final static String url_ip = "http://10.66.52.214:8080";
 	public final static String ys_url = "http://10.66.52.214:8080/intcubecontroller/Controller/WS";//可用预算

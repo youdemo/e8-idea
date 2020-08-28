@@ -62,7 +62,8 @@
 	
 <% 
 	String userid = ""+user.getUID();
-	String serverUrl = "http://172.23.9.51:8080";   // 需要跳转服务域名(或IP)及端口的地址
+	//String serverUrl = "http://172.23.9.51:8080";   // 需要跳转服务域名(或IP)及端口的地址
+	String serverUrl = "http://oaqd.morningcore.com";   // 需要跳转服务域名(或IP)及端口的地址
 	
 	if("1".equals(userid)){
 		out.println("系统管理员不支持查看!");
@@ -74,6 +75,10 @@
 	rs.executeSql(sql);
 	if(rs.next()){
 		userCode = Util.null2String(rs.getString("workcode"));
+	}
+	if("".equals(userCode.trim())){
+		out.println("工号不能为空！");
+		return;
 	}
 	// 加密   2次加密
 	String userXf = encrypt(userCode + "@" + userid + "#" + new Date().getTime());

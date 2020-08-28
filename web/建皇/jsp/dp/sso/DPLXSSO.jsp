@@ -24,7 +24,7 @@
     String urlpara = "DPLXSSO#"+workcode+"#"+nowTime;
     String key = Util.getEncrypt(urlpara);
     String paramstr=workcode+","+nowTime;
-    String url="https://10.10.20.22/custom-sso-token/tokensso/baselogin?paramstr="+paramstr+"&key="+key;
+    String url="https://cloud.drapho.com/custom-sso-token/tokensso/baselogin?paramstr="+paramstr+"&key="+key;
     response.sendRedirect(url);
 
 

@@ -3,6 +3,8 @@ package morningcore.sap;
 import com.sap.mw.jco.IFunctionTemplate;
 import com.sap.mw.jco.JCO;
 import com.sap.mw.jco.JCO.Table;
+import com.weaver.integration.datesource.SAPInterationOutUtil;
+import com.weaver.integration.log.LogInfo;
 import morningcore.util.InsertUtil;
 import weaver.conn.RecordSet;
 import weaver.formmode.setup.ModeRightInfo;
@@ -17,8 +19,8 @@ import java.util.Map;
 import static morningcore.util.GetModeidUtil.getModeId;
 
 public class IV_Flag_Internal_OrderBapi extends BaseBean{
-    public JCO.Client sapconnection = new SAPConn().getConnection();
     public void getData(){
+        writeLog("开始同步数据IV_Flag_Internal_OrderBapi");
         RecordSet rs = new RecordSet();
         InsertUtil iu = new InsertUtil();
         SimpleDateFormat sf = new SimpleDateFormat("HH:mm:ss");
@@ -29,7 +31,10 @@ public class IV_Flag_Internal_OrderBapi extends BaseBean{
         JCO.Repository mRepository;
         JCO.Function jcoFunction = null;
         try{
-            mRepository = new JCO.Repository("sap",sapconnection);
+            SAPInterationOutUtil sapUtil = new SAPInterationOutUtil();
+            JCO.Client myConnection = (JCO.Client) sapUtil.getConnection("1", new LogInfo());
+            myConnection.connect();
+            mRepository = new JCO.Repository("sap",myConnection);
             IFunctionTemplate ft = mRepository.getFunctionTemplate("Z_FI_RFC_FW_MDM");
             jcoFunction = new JCO.Function(ft);
 
@@ -37,7 +42,7 @@ public class IV_Flag_Internal_OrderBapi extends BaseBean{
             JCO.ParameterList paraList = jcoFunction.getImportParameterList();
             paraList.setValue("X","IV_FLAG_INTERNAL_ORDER");
             writeLog("paraList--> " + paraList.toString());
-            sapconnection.execute(jcoFunction);
+            myConnection.execute(jcoFunction);
             Table outtab = jcoFunction.getExportParameterList().getTable("ET_INTERNAL_ORDER");
             //RecordSet rs2 = new RecordSet();
 //            writeLog("outtab--> " + outtab.toString());
@@ -91,7 +96,7 @@ public class IV_Flag_Internal_OrderBapi extends BaseBean{
                     sql = "update uf_nbdd set INTERNAL_ORDER_DESC = '" + INTERNAL_ORDER_DESC + "',INTERNAL_ORDER_TYPE = '"
                             + INTERNAL_ORDER_TYPE + "',PROFIT_CENTER = '" + PROFIT_CENTER +
                             "',FLAG_STATISTICAL = '" + FLAG_STATISTICAL +  "',EXTERNAL_ORDER = '" + EXTERNAL_ORDER +
-                            "',ORDER_TYPE = '" + ORDER_TYPE + "' where  INTERNAL_ORDER = '" + INTERNAL_ORDER +
+                            "' where  INTERNAL_ORDER = '" + INTERNAL_ORDER +
                             "' and COMPANY_CODE = '" + COMPANY_CODE + "'";
                     rs.execute(sql);
                     writeLog("sql-->" + sql);
@@ -111,9 +116,10 @@ public class IV_Flag_Internal_OrderBapi extends BaseBean{
                 }
             }
            }catch(Exception e){
-            e.printStackTrace();
-            writeLog("e--> " + e);
+            writeLog("同步数据异常");
+            writeLog(e);
         }finally{
         }
+        writeLog("同步数据异常");
     }
 }

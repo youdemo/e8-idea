@@ -1,21 +1,26 @@
 <!-- script代码，如果需要引用js文件，请使用与HTML中相同的方式。 -->
 <script type="text/javascript">
 var indexNo = "0";//明细表下标，从0开始
-var fpId = "26690";//发票
-var fpZsId = "26415";//发票张数
-var jeId = "26683";//金额
-var je2Id = "8133";//实际报销金额
-var zkanId = "26416";//展开按钮
-var sxfpId = "26417";//所选发票id
-var sjbxje_dt1 = "#field8133_";//明细1实际报销金额
-var bxje_dt1 = "#field26683_";//明细1票面金额
-var fplx_dt1 = "#field26688_";//明细1发票类型
-var sj_dt1 = "#field10340_";//明细1税金
-var sfcb_dt1 = "#field26860_";//明细1是否超标
-var bxxm_dt1 = "#field10468_";//明细1报销项目
-var lcxz_dt1 = "field27412_";//明细1流程选择
-var sfwzdf_dt1 = "#field27414_";//明细1是否为招待费
-var dissfwzdf_dt1 = "#disfield27414_";//明细1是否为招待费
+var fpId = "128602";//发票
+var fpZsId = "128603";//发票张数
+var jeId = "128606";//金额
+var je2Id = "128582";//实际报销金额
+var zkanId = "128604";//展开按钮
+var sxfpId = "128605";//所选发票id
+var yrfwlxId = "128579";//货物或应税服务类型
+var zwlxId = "128630";//座位类型
+var sjbxje_dt1 = "#field128582_";//明细1实际报销金额
+var bxje_dt1 = "#field128606_";//明细1票面金额
+var fplx_dt1 = "#field128616_";//明细1发票类型
+var sj_dt1 = "#field128590_";//明细1税金
+var sfcb_dt1 = "#field128632_";//明细1是否超标
+var bxxm_dt1 = "#field150064_";//明细1报销项目
+var lcxz_dt1 = "field128634_";//明细1流程选择
+var sfwzdf_dt1 = "#field128633_";//明细1是否为招待费
+var dissfwzdf_dt1 = "#disfield128633_";//明细1是否为招待费
+var yfje_dt1 = "#field191627_";//明细1 油费金额
+var jermb_dt1 = "#field128581_";//明细1 金额人民币
+var fkpz_dt1 = "#field128615_";//明细1 付款凭证
 function bindFunc(value){
     var indexnum0 = -1;
     var _xm_array3 = jQuery("input[name='check_node_"+indexNo+"']");
@@ -49,6 +54,12 @@ function bindFunc(value){
         }
     }
 }
+function setOtherFormData(__index,invoiceServiceYype,seat){
+    $("#field"+yrfwlxId+"_"+__index).val(invoiceServiceYype);
+    $("#field"+yrfwlxId+"_"+__index+"span").text(invoiceServiceYype);
+    $("#field"+zwlxId+"_"+__index).val(seat);
+    $("#field"+zwlxId+"_"+__index+"span").text(seat);
+}
 function invoiceChange(index){
     var invoices = jQuery("#field"+fpId+"_"+index).val();
     if(invoices==""){
@@ -66,6 +77,10 @@ function invoiceCallBack(e,json,name){
         success: function do4Success(_json){
             var taxIncludedPrice = _json.taxIncludedPrice;
             setFormData(index,1,ids,taxIncludedPrice);
+            //其他字段
+            var invoiceServiceYype = _json.invoiceServiceYype;
+            var seat = _json.seat;
+            setOtherFormData(index,invoiceServiceYype,seat);
         }
     });
 }
@@ -97,7 +112,7 @@ jQuery(document).ready(function(){
 
     });
     setTimeout("bindFunc(1)",1000);
-    setTimeout("binddetail()",1000);
+    setTimeout("binddetail()",300);
     //setTimeout("binddetail()",1000);
     checkCustomize = function () {
         var indexnum0=jQuery("#indexnum0").val();
@@ -115,6 +130,35 @@ jQuery(document).ready(function(){
                 if(Number(sjbxje_dt1_val)>Number(bxje_dt1_val)){
                     Dialog.alert("明细1中存在实际报销金额大于票面金额的数据，请检查");
                     return false;
+                }
+
+                var jermb_dt1_val = jQuery(jermb_dt1+index).val();
+                if(jermb_dt1_val==""){
+                    jermb_dt1_val = "0";
+                }
+                if(Number(jermb_dt1_val)>1000){
+                    var hasfj = "1";
+                    var fjsc_val = jQuery(fkpz_dt1+index).val();
+                    if (fjsc_val == "null" || fjsc_val == "") {
+                        //jQuery("#" + fjsc).val("");
+                        if (jQuery(".progressBarStatus").length > 0) {
+                            jQuery(".progressBarStatus").each(function () {
+                                if (jQuery(this).html().indexOf("Pending") < 0) {
+                                    hasfj= "0";
+                                }
+                            })
+                        } else {
+                            hasfj= "0";
+                        }
+                    }
+                    if(hasfj == "0"){
+                        if(confirm("您当前有发票超过1000元，您是否需要上传付款凭证附件")){
+                            return false;
+                        }else{
+
+                        }
+
+                    }
                 }
 
             }
@@ -150,10 +194,27 @@ function changebt(index){
         removecheck(lcxz_dt1+index,"1");
     }
 }
+function setSjbxje(index){
+    var yfje_dt1_val = jQuery(yfje_dt1+index).val();
+    var sjbxje_dt1_val = jQuery(sjbxje_dt1+index).val()
+    var bxxm_dt1_val = jQuery(bxxm_dt1+index).val();
+    if(bxxm_dt1_val == "67" && yfje_dt1_val != "" && sjbxje_dt1_val != ""){
+        if(Number(yfje_dt1_val)<Number(sjbxje_dt1_val)){
+            jQuery(sjbxje_dt1+index).val(yfje_dt1_val);
+            jQuery(sjbxje_dt1+index).change();
+        }
+    }
+}
 function binddt(index){
     jQuery(sfcb_dt1+index).bindPropertyChange(function(){
         changecolor(index);
 
+    });
+    jQuery(yfje_dt1+index).bindPropertyChange(function(){
+        setSjbxje(index);
+    });
+    jQuery(sjbxje_dt1+index).bind('change',function(){
+        setSjbxje(index);
     });
 
     jQuery(bxxm_dt1+index).bindPropertyChange(function(){
@@ -170,6 +231,7 @@ function binddt(index){
             jQuery(dissfwzdf_dt1+index).val("1");
             jQuery(sfwzdf_dt1+index).trigger("change")
         }
+        setSjbxje(index);
     });
 
 
@@ -229,8 +291,6 @@ function removecheck(btid,flag){
 }
 
 </script>
-
-
 
 
 

@@ -5,18 +5,19 @@ import weaver.interfaces.workflow.action.WorkflowToDoc;
 
 public class Test {
 
+
 	public static void main(String[] args) throws Exception {
-		JSONObject jo = new JSONObject();
-		jo.put("apply_name", "HR负责人工号");
-		jo.put("apply_date", "系统时间");
-		jo.put("name", "应聘者姓名");
-		jo.put("work_place", "工作城市");
-		jo.put("grade", "职等");
-		jo.put("postion", "职位代码");
-		jo.put("superior", "直接上级工号");
-		jo.put("zdr", "指导人工号");
-		jo.put("msgpj", "面试官评价link");
-		System.out.println(jo.toString());
+		String oaaddress = "";
+		String localip ="10.1.96.16";
+		String localiparr = "10.1.96.16:8083,10.1.96.58:8083";
+		String  iparr[] = localiparr.split(",");
+		for(String ipaddress:iparr){
+			if(localip.equals(ipaddress.substring(0,ipaddress.indexOf(":")))){
+				oaaddress=ipaddress;
+				break;
+			}
+		}
+		System.out.println(oaaddress);
 		//WorkflowToDoc
 	}
 

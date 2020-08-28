@@ -1,10 +1,12 @@
 package jsd.financialcontrol.util;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import weaver.conn.RecordSet;
 import weaver.general.Util;
@@ -39,7 +41,7 @@ public class GetUtil {
 		return hexValue.toString();
 	}
 	/**
-	 * 获取数据 ----单个条件
+	 * 获取数据 
 	 * @param tableName
 	 * @param fieldName
 	 * @param wherekey
@@ -57,6 +59,63 @@ public class GetUtil {
 	    return result;
 	}
 	/**
+	 * 获取科目数数据 
+	 * @param tableName
+	 * @param fieldName
+	 * @param wherekey
+	 * @param strparm
+	 * @return
+	 */
+	public String getKMFieldVal(String tableName,String fieldName,String wherekey,String strparm){
+		String sql = "select * from "+ tableName + " where  "+wherekey+" = '" + strparm + "'";
+		RecordSet rs = new RecordSet();
+		String result = "";
+		rs.executeSql(sql);
+	    if(rs.next()){
+	    	result = Util.null2String(rs.getString(fieldName));
+	    }
+	    if(result.lastIndexOf("-")<0) {
+	    	return result;
+	    }else {
+	    	return result.substring(result.lastIndexOf("-")+1, result.length());
+	    }
+	    
+	    
+	    
+	    
+	}
+	/**
+	 * 获取登录令牌
+	 * @return
+	 */
+	public String getToken() {
+		long dat = new Date().getTime();
+		String sec = FinalUtil.secret;
+		String username = FinalUtil.username;
+		GetUtil gg = new GetUtil();
+		String secretKey = "";
+		String token = "";
+		try {
+			secretKey = gg.compute(username, sec, dat+"");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}		
+		String str = "method=loginWithoutEncrypt&userName="+username+"&secretKey="+secretKey+"&dateTime="+dat+"&appToken=CONTROLLER_1"; 
+		HttpRequest hrt = new HttpRequest();
+		String rest  = hrt.sendPost(FinalUtil.loginToken_url, str);
+		try {
+			JSONObject json = new JSONObject(rest);
+			String statu = json.getString("ok");
+			if("true".equals(statu)){
+				token = json.getJSONObject("body").getString("token");
+			}
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return token;
+		
+	}
+	/**
 	 * 获取系统日期
 	 * @return
 	 */
@@ -69,13 +128,8 @@ public class GetUtil {
 	
 	
  
-	public static void main(String[] args) throws UnsupportedEncodingException {
+	public static void main(String[] args) {
 		GetUtil  gu = new GetUtil();
-
-		String str111 = "{\"controlRuleCode\": \"\",\"dimensions\": [{\"name\": \"组织\",\"valueType\": 0}, {\"name\": \"科目\",\"valueType\": 0}, {\"name\": \"年\",\"valueType\": 0}, {\"name\": \"期间\",\"valueType\": 0}, {\"name\": \"版本\",\"valueType\": 0}, {\"name\": \"场景\",\"valueType\": 0}, {\"name\": \"项目\",\"valueType\": 0}, {\"name\": \"综合\",\"valueType\": 0}],\"cells\": [{\"rowNum\": 1,\"members\": [\"杰士德集团董事长办公室\", \"公积金\", \"2020年\", \"5月\", \"编制第一版\", \"预算\", \"不分项目\", \"不分综合\"],\"value\": 6000},{\"rowNum\": 2,\"members\": [\"杰士德集团董事长办公室\", \"公积金\", \"2020年\", \"5月\", \"编制第一版\", \"预算\", \"不分项目\", \"不分综合\"],\"value\": 6000}]}";
-		System.out.println(URLEncoder.encode(str111,"utf-8"));
-		str111 = "{\"controlRuleCode\": \"\",\"dimensions\": [{\"name\": \"组织\",\"valueType\": 0}, {\"name\": \"科目\",\"valueType\": 0}, {\"name\": \"年\",\"valueType\": 0}, {\"name\": \"期间\",\"valueType\": 0}, {\"name\": \"版本\",\"valueType\": 0}, {\"name\": \"场景\",\"valueType\": 0}, {\"name\": \"项目\",\"valueType\": 0}, {\"name\": \"综合\",\"valueType\": 0}],\"cells\": [{\"rowNum\": 1,\"members\": [\"杰士德集团董事长办公室\", \"公积金\", \"2020年\", \"5月\", \"编制第一版\", \"预算\", \"不分项目\", \"不分综合\"],\"value\": 6000}]}";
-		System.out.println(URLEncoder.encode(str111,"utf-8"));
 		long aa = new Date().getTime();  
 		
 		
